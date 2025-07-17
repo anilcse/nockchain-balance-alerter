@@ -1,4 +1,29 @@
 {
   "balances": [
+    {
+      "address": "3L1PmyRwjyZQ5EQcn4iXECB4v7pyLNAnaU5JCex7NzcJNbFpd3hz5znMYVA33QAHrVc72XeTi62GHqLJqQoJ5w3e4dDDrEQSW7ShSnAvhA7p9RLKXXh2fi7WbKJWJzgmAUMw",
+      "currentBalance": 34492645376,
+      "lastUpdated": 1752745937
+    },
+    {
+      "address": "3c2fmFYwe1cfMdAoPY3gbiLcLuWbFZzqnkbHu7zLHdJCTVJHXkZSJyBWMBQiQkbmvzH7f5zrLJh8YNn2bBVa1R54zEMk5LL52d1UiwHzHUdbkVMkajvZSo5DRWkjQcPnh6Nq",
+      "currentBalance": 126701535244,
+      "lastUpdated": 1752745938
+    },
+    {
+      "address": "3RH2Jc6dJxYeHPBkPyrmWuEyKA6Xn6B8zaYsX5LwmPeHkAbvjZNdvP3nptZVQiLaWfoDUM1QMreUAvGZk5RcypQ9tkLUwWTZQZYTgn9PoqijGcESqVNg3PxntHMxFxhR48xP",
+      "currentBalance": 2147483648,
+      "lastUpdated": 1752748241
+    },
+    {
+      "address": "2axVCvSfizjX29Ce9axAZ4nn9hvuigvnuqfeJzokgnZn2bYfnFMQkzo6RFkXFiQ4oqVJmsB74sP3nYMtzH8B5z8DRH7EhPSnPhQwhaJQQAQcfU2JQbP8oyMJNSRyMx6kFs2X",
+      "currentBalance": 0,
+      "lastUpdated": 1752748242
+    },
+    {
+      "address": "3UvY1qQsDqjxmEd9bhfrqSBfHfm6MTkzrzJxBxfiJurbAsyJF1LfmzCW76WcbddbYundffxDr3L4mXNSfCRnHjfoVeeceS3e17NoStWninDP5vj8x9a3YqpaLBB42Cr3TFre",
+      "currentBalance": 0,
+      "lastUpdated": 1752748243
+    }
   ]
 }

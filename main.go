@@ -18,16 +18,18 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	SlackBotToken string   `json:"slackBotToken"`
-	SlackChannel  string   `json:"slackChannel"`
-	Addresses     []string `json:"addresses"`
+	SlackBotToken    string   `json:"slackBotToken"`
+	SlackChannel     string   `json:"slackChannel"`
+	TelegramBotToken string   `json:"telegramBotToken"`
+	TelegramChatID   string   `json:"telegramChatID"`
+	Addresses        []string `json:"addresses"`
 }
 
 // BalanceData stores the balance information for an address
 type BalanceData struct {
-	Address       string `json:"address"`
+	Address        string `json:"address"`
 	CurrentBalance int64  `json:"currentBalance"`
-	LastUpdated   int64  `json:"lastUpdated"`
+	LastUpdated    int64  `json:"lastUpdated"`
 }
 
 // RPCRequest represents the JSON-RPC request structure
@@ -54,11 +56,11 @@ type State struct {
 }
 
 const (
-	rpcURL           = "https://nockblocks.com/rpc"
-	balanceFile      = "balances.json"
-	checkInterval    = 1 * time.Minute
-	summaryInterval  = 6 * time.Hour
-	nickPerNock      = 65536 // 2^16 nick per $NOCK
+	rpcURL          = "https://nockblocks.com/rpc"
+	balanceFile     = "balances.json"
+	checkInterval   = 1 * time.Minute
+	summaryInterval = 6 * time.Hour
+	nickPerNock     = 65536 // 2^16 nick per $NOCK
 )
 
 // loadConfig loads configuration from environment variables
@@ -68,9 +70,11 @@ func loadConfig() (Config, error) {
 	}
 
 	config := Config{
-		SlackBotToken: os.Getenv("SLACK_BOT_TOKEN"),
-		SlackChannel:  os.Getenv("SLACK_CHANNEL"),
-		Addresses:     []string{},
+		SlackBotToken:    os.Getenv("SLACK_BOT_TOKEN"),
+		SlackChannel:     os.Getenv("SLACK_CHANNEL"),
+		TelegramBotToken: os.Getenv("TELEGRAM_BOT_TOKEN"),
+		TelegramChatID:   os.Getenv("TELEGRAM_CHAT_ID"),
+		Addresses:        []string{},
 	}
 
 	addresses := os.Getenv("ADDRESSES")
@@ -78,8 +82,8 @@ func loadConfig() (Config, error) {
 		config.Addresses = strings.Split(addresses, ",")
 	}
 
-	if config.SlackBotToken == "" || config.SlackChannel == "" {
-		return config, fmt.Errorf("SLACK_BOT_TOKEN and SLACK_CHANNEL must be set")
+	if (config.SlackBotToken == "" || config.SlackChannel == "") && (config.TelegramBotToken == "" || config.TelegramChatID == "") {
+		return config, fmt.Errorf("either SLACK_BOT_TOKEN and SLACK_CHANNEL or TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set")
 	}
 
 	return config, nil
@@ -162,6 +166,9 @@ func formatBalance(nick int64) string {
 
 // sendSlackMessage sends a formatted message to a Slack channel using block kit
 func sendSlackMessage(botToken, channel string, blocks []slack.Block) error {
+	if botToken == "" || channel == "" {
+		return nil // Skip if Slack is not configured
+	}
 	api := slack.New(botToken)
 	_, _, err := api.PostMessage(
 		channel,
@@ -169,6 +176,31 @@ func sendSlackMessage(botToken, channel string, blocks []slack.Block) error {
 		slack.MsgOptionAsUser(true),
 	)
 	return err
+}
+
+// sendTelegramMessage sends a formatted message to a Telegram chat
+func sendTelegramMessage(botToken, chatID, message string) error {
+	if botToken == "" || chatID == "" {
+		return nil // Skip if Telegram is not configured
+	}
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", botToken)
+	payload := map[string]interface{}{
+		"chat_id":    chatID,
+		"text":       message,
+		"parse_mode": "MarkdownV2",
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return nil
 }
 
 // createBalanceChangeBlocks creates Slack blocks for a balance change alert
@@ -239,6 +271,45 @@ func createSummaryBlocks(balances []BalanceData) []slack.Block {
 	return blocks
 }
 
+// createTelegramBalanceChangeMessage creates a Telegram markdown message for a balance change
+func createTelegramBalanceChangeMessage(address, oldBalance, newBalance string) string {
+	// Escape special characters for Telegram MarkdownV2
+	escapedAddress := strings.ReplaceAll(address, "_", "\\_")
+	return fmt.Sprintf(
+		"💸 *Balance Change Alert*\n\n"+
+			"*Address*: `%s`\n"+
+			"*Old Balance*: %s\n"+
+			"*New Balance*: %s\n"+
+			"──────────\n"+
+			"_Updated at %s_",
+		escapedAddress,
+		oldBalance,
+		newBalance,
+		time.Now().Format(time.RFC3339),
+	)
+}
+
+// createTelegramSummaryMessage creates a Telegram markdown message for the balance summary
+func createTelegramSummaryMessage(balances []BalanceData) string {
+	message := "📊 *Balance Summary*\n\n"
+	for i, balance := range balances {
+		// Escape special characters for Telegram MarkdownV2
+		escapedAddress := strings.ReplaceAll(balance.Address, "_", "\\_")
+		message += fmt.Sprintf(
+			"*Address %d*: `%s`\n"+
+				"*Balance*: %s\n"+
+				"*Last Updated*: %s\n"+
+				"──────────\n",
+			i+1,
+			escapedAddress,
+			formatBalance(balance.CurrentBalance),
+			time.Unix(balance.LastUpdated, 0).Format(time.RFC3339),
+		)
+	}
+	message += fmt.Sprintf("_Generated at %s_", time.Now().Format(time.RFC3339))
+	return message
+}
+
 // checkBalances checks all addresses for balance changes
 func checkBalances(config Config, state *State) {
 	for _, address := range config.Addresses {
@@ -261,10 +332,11 @@ func checkBalances(config Config, state *State) {
 		if balanceIndex == -1 {
 			// New address
 			state.Balances = append(state.Balances, BalanceData{
-				Address:       address,
+				Address:        address,
 				CurrentBalance: newBalance,
-				LastUpdated:   time.Now().Unix(),
+				LastUpdated:    time.Now().Unix(),
 			})
+			// Slack notification
 			blocks := createBalanceChangeBlocks(
 				address,
 				"Initial balance",
@@ -273,10 +345,20 @@ func checkBalances(config Config, state *State) {
 			if err := sendSlackMessage(config.SlackBotToken, config.SlackChannel, blocks); err != nil {
 				log.Printf("Error sending Slack message: %v", err)
 			}
+			// Telegram notification
+			message := createTelegramBalanceChangeMessage(
+				address,
+				"Initial balance",
+				formatBalance(newBalance),
+			)
+			if err := sendTelegramMessage(config.TelegramBotToken, config.TelegramChatID, message); err != nil {
+				log.Printf("Error sending Telegram message: %v", err)
+			}
 		} else if newBalance != oldBalance {
 			// Balance changed
 			state.Balances[balanceIndex].CurrentBalance = newBalance
 			state.Balances[balanceIndex].LastUpdated = time.Now().Unix()
+			// Slack notification
 			blocks := createBalanceChangeBlocks(
 				address,
 				formatBalance(oldBalance),
@@ -284,6 +366,15 @@ func checkBalances(config Config, state *State) {
 			)
 			if err := sendSlackMessage(config.SlackBotToken, config.SlackChannel, blocks); err != nil {
 				log.Printf("Error sending Slack message: %v", err)
+			}
+			// Telegram notification
+			message := createTelegramBalanceChangeMessage(
+				address,
+				formatBalance(oldBalance),
+				formatBalance(newBalance),
+			)
+			if err := sendTelegramMessage(config.TelegramBotToken, config.TelegramChatID, message); err != nil {
+				log.Printf("Error sending Telegram message: %v", err)
 			}
 		}
 	}
@@ -295,9 +386,15 @@ func checkBalances(config Config, state *State) {
 
 // sendSummary sends a summary of all balances
 func sendSummary(config Config, state State) {
+	// Slack notification
 	blocks := createSummaryBlocks(state.Balances)
 	if err := sendSlackMessage(config.SlackBotToken, config.SlackChannel, blocks); err != nil {
-		log.Printf("Error sending summary: %v", err)
+		log.Printf("Error sending Slack summary: %v", err)
+	}
+	// Telegram notification
+	message := createTelegramSummaryMessage(state.Balances)
+	if err := sendTelegramMessage(config.TelegramBotToken, config.TelegramChatID, message); err != nil {
+		log.Printf("Error sending Telegram summary: %v", err)
 	}
 }
 
