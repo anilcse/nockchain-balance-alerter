@@ -1,0 +1,14 @@
+{
+  "balances": [
+    {
+      "address": "3L1PmyRwjyZQ5EQcn4iXECB4v7pyLNAnaU5JCex7NzcJNbFpd3hz5znMYVA33QAHrVc72XeTi62GHqLJqQoJ5w3e4dDDrEQSW7ShSnAvhA7p9RLKXXh2fi7WbKJWJzgmAUMw",
+      "currentBalance": 34492645376,
+      "lastUpdated": 1752745937
+    },
+    {
+      "address": "3c2fmFYwe1cfMdAoPY3gbiLcLuWbFZzqnkbHu7zLHdJCTVJHXkZSJyBWMBQiQkbmvzH7f5zrLJh8YNn2bBVa1R54zEMk5LL52d1UiwHzHUdbkVMkajvZSo5DRWkjQcPnh6Nq",
+      "currentBalance": 126701535244,
+      "lastUpdated": 1752745938
+    }
+  ]
+}
