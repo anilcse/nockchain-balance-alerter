@@ -160,15 +160,83 @@ func formatBalance(nick int64) string {
 	return fmt.Sprintf("%d nick (%.2f $NOCK)", nick, nock)
 }
 
-// sendSlackMessage sends a message to a Slack channel
-func sendSlackMessage(botToken, channel, message string) error {
+// sendSlackMessage sends a formatted message to a Slack channel using block kit
+func sendSlackMessage(botToken, channel string, blocks []slack.Block) error {
 	api := slack.New(botToken)
 	_, _, err := api.PostMessage(
 		channel,
-		slack.MsgOptionText(message, false),
+		slack.MsgOptionBlocks(blocks...),
 		slack.MsgOptionAsUser(true),
 	)
 	return err
+}
+
+// createBalanceChangeBlocks creates Slack blocks for a balance change alert
+func createBalanceChangeBlocks(address, oldBalance, newBalance string) []slack.Block {
+	return []slack.Block{
+		slack.NewHeaderBlock(
+			slack.NewTextBlockObject("plain_text", "💸 Balance Change Alert", true, false),
+		),
+		slack.NewSectionBlock(
+			slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*Address*: `%s`", address), false, false),
+			nil,
+			nil,
+		),
+		slack.NewSectionBlock(
+			slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*Old Balance*: %s", oldBalance), false, false),
+			nil,
+			nil,
+		),
+		slack.NewSectionBlock(
+			slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*New Balance*: %s", newBalance), false, false),
+			nil,
+			nil,
+		),
+		slack.NewDividerBlock(),
+		slack.NewContextBlock(
+			"",
+			slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("_Updated at %s_", time.Now().Format(time.RFC3339)), false, false),
+		),
+	}
+}
+
+// createSummaryBlocks creates Slack blocks for the balance summary
+func createSummaryBlocks(balances []BalanceData) []slack.Block {
+	blocks := []slack.Block{
+		slack.NewHeaderBlock(
+			slack.NewTextBlockObject("plain_text", "📊 Balance Summary", true, false),
+		),
+	}
+
+	for i, balance := range balances {
+		blocks = append(blocks,
+			slack.NewSectionBlock(
+				slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*Address %d*: `%s`", i+1, balance.Address), false, false),
+				nil,
+				nil,
+			),
+			slack.NewSectionBlock(
+				slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*Balance*: %s", formatBalance(balance.CurrentBalance)), false, false),
+				nil,
+				nil,
+			),
+			slack.NewSectionBlock(
+				slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("*Last Updated*: %s", time.Unix(balance.LastUpdated, 0).Format(time.RFC3339)), false, false),
+				nil,
+				nil,
+			),
+			slack.NewDividerBlock(),
+		)
+	}
+
+	blocks = append(blocks,
+		slack.NewContextBlock(
+			"",
+			slack.NewTextBlockObject("mrkdwn", fmt.Sprintf("_Generated at %s_", time.Now().Format(time.RFC3339)), false, false),
+		),
+	)
+
+	return blocks
 }
 
 // checkBalances checks all addresses for balance changes
@@ -197,16 +265,24 @@ func checkBalances(config Config, state *State) {
 				CurrentBalance: newBalance,
 				LastUpdated:   time.Now().Unix(),
 			})
-			message := fmt.Sprintf("New address monitored: %s\nBalance: %s", address, formatBalance(newBalance))
-			if err := sendSlackMessage(config.SlackBotToken, config.SlackChannel, message); err != nil {
+			blocks := createBalanceChangeBlocks(
+				address,
+				"Initial balance",
+				formatBalance(newBalance),
+			)
+			if err := sendSlackMessage(config.SlackBotToken, config.SlackChannel, blocks); err != nil {
 				log.Printf("Error sending Slack message: %v", err)
 			}
 		} else if newBalance != oldBalance {
 			// Balance changed
 			state.Balances[balanceIndex].CurrentBalance = newBalance
 			state.Balances[balanceIndex].LastUpdated = time.Now().Unix()
-			message := fmt.Sprintf("Balance change for %s\nOld: %s\nNew: %s", address, formatBalance(oldBalance), formatBalance(newBalance))
-			if err := sendSlackMessage(config.SlackBotToken, config.SlackChannel, message); err != nil {
+			blocks := createBalanceChangeBlocks(
+				address,
+				formatBalance(oldBalance),
+				formatBalance(newBalance),
+			)
+			if err := sendSlackMessage(config.SlackBotToken, config.SlackChannel, blocks); err != nil {
 				log.Printf("Error sending Slack message: %v", err)
 			}
 		}
@@ -219,15 +295,8 @@ func checkBalances(config Config, state *State) {
 
 // sendSummary sends a summary of all balances
 func sendSummary(config Config, state State) {
-	message := "Balance Summary:\n\n"
-	for _, balance := range state.Balances {
-		message += fmt.Sprintf("Address: %s\nBalance: %s\nLast Updated: %s\n\n",
-			balance.Address,
-			formatBalance(balance.CurrentBalance),
-			time.Unix(balance.LastUpdated, 0).Format(time.RFC3339))
-	}
-
-	if err := sendSlackMessage(config.SlackBotToken, config.SlackChannel, message); err != nil {
+	blocks := createSummaryBlocks(state.Balances)
+	if err := sendSlackMessage(config.SlackBotToken, config.SlackChannel, blocks); err != nil {
 		log.Printf("Error sending summary: %v", err)
 	}
 }
