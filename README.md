@@ -22,7 +22,7 @@ A Go program that monitors Nockblocks blockchain addresses, converts balances fr
    ```
 
 2. **Configure Notifications** (at least one required):
-  For detailed guide on how to setup slack/telegram bots, refer to GUIDES[./GUIDES.md]
+  For detailed guide on how to setup slack/telegram bots, refer to [GUIDES](./GUIDES.md)
    - **Slack**:
      - Create an app at [api.slack.com/apps](https://api.slack.com/apps).
      - Add `chat:write` scope, install to workspace, get `xoxb-` token.
