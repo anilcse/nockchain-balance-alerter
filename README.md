@@ -47,7 +47,7 @@ Create a `.env` file in the project root with the following:
 ```env
 SLACK_BOT_TOKEN=xoxb-your-bot-token
 SLACK_CHANNEL=#nock-balances
-ADDRESSES=3L1PmyRwjyZQ5EQcn4iXECB4v7pyLNAnaU5JCex7NzcJNbFpd3hz5znMYVA33QAHrVc72XeTi62GHqLJqQoJ5w3e4dDDrEQSW7ShSnAvhA7p9RLKXXh2fi7WbKJWJzgmAUMw,another_address_here
+ADDRESSES=2jFjhxTEaBw7oyCdjLNTJYQoNbBEPBPmT92rYgD33UqA3RjCSVCDrp2qnGGoiaKnCC9ERn8x3iGGco2geXRVRwRq4wTGDHSodfL4HtJ8vxuGTnbKzVbVtFVVPP6jyQswJR9r,another_address_here
 ```
 - Replace `xoxb-your-bot-token` with the Slack bot token.
 - Replace `#nock-balances` with your channel name.
@@ -73,7 +73,7 @@ Balances are reported in both nick and $NOCK:
 ### Balance Change Alert
 ```
 💸 Balance Change Alert
-*Address*: `3L1PmyRwjyZQ5EQcn4iXECB4v7pyLNAnaU5JCex7NzcJNbFpd3hz5znMYVA33QAHrVc72XeTi62GHqLJqQoJ5w3e4dDDrEQSW7ShSnAvhA7p9RLKXXh2fi7WbKJWJzgmAUMw`
+*Address*: `2jFjhxTEaBw7oyCdjLNTJYQoNbBEPBPmT92rYgD33UqA3RjCSVCDrp2qnGGoiaKnCC9ERn8x3iGGco2geXRVRwRq4wTGDHSodfL4HtJ8vxuGTnbKzVbVtFVVPP6jyQswJR9r`
 *Old Balance*: 34492645376 nick (526.18 $NOCK)
 *New Balance*: 34492645377 nick (526.18 $NOCK)
 ---
@@ -83,7 +83,7 @@ _Updated at 2025-07-17T15:31:00Z_
 ### Balance Summary (Every 6 Hours)
 ```
 📊 Balance Summary
-*Address 1*: `3L1PmyRwjyZQ5EQcn4iXECB4v7pyLNAnaU5JCex7NzcJNbFpd3hz5znMYVA33QAHrVc72XeTi62GHqLJqQoJ5w3e4dDDrEQSW7ShSnAvhA7p9RLKXXh2fi7WbKJWJzgmAUMw`
+*Address 1*: `2jFjhxTEaBw7oyCdjLNTJYQoNbBEPBPmT92rYgD33UqA3RjCSVCDrp2qnGGoiaKnCC9ERn8x3iGGco2geXRVRwRq4wTGDHSodfL4HtJ8vxuGTnbKzVbVtFVVPP6jyQswJR9r`
 *Balance*: 34492645376 nick (526.18 $NOCK)
 *Last Updated*: 2025-07-17T15:31:00Z
 ---
